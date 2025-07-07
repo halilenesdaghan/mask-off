@@ -1,38 +1,55 @@
-import React, { createContext, useState, useContext, useEffect } from 'react';
-import api from '../services/api'; // Henüz oluşturmadık, bir sonraki adımda yapacağız
+import React, { createContext, useState, useContext, useEffect, useCallback } from 'react';
+import api from '../services/api';
 
 const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
-  const [token, setToken] = useState(localStorage.getItem('token'));
+  const [token, setToken] = useState(() => localStorage.getItem('token'));
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
+  const setupAxiosInterceptors = useCallback((token) => {
     if (token) {
       api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-      // Burada token'ı doğrulayıp kullanıcı bilgisini çeken bir endpoint çağrılabilir (örn: /api/auth/me)
-      // Şimdilik token varsa oturum açık varsayıyoruz.
+    } else {
+      delete api.defaults.headers.common['Authorization'];
+    }
+  }, []);
+
+  useEffect(() => {
+    // Uygulama ilk yüklendiğinde token varsa interceptor'ı ayarla
+    if (token) {
+      setupAxiosInterceptors(token);
+      // Burada /api/auth/me gibi bir endpoint ile kullanıcı bilgileri çekilebilir
+      // Şimdilik token'ın varlığını yeterli kabul ediyoruz.
     }
     setLoading(false);
-  }, [token]);
+  }, [token, setupAxiosInterceptors]);
 
-  const login = (newToken, userData) => {
+  const login = useCallback((newToken, userData) => {
     localStorage.setItem('token', newToken);
     setToken(newToken);
     setUser(userData);
-    api.defaults.headers.common['Authorization'] = `Bearer ${newToken}`;
-  };
+    setupAxiosInterceptors(newToken);
+  }, [setupAxiosInterceptors]);
 
-  const logout = () => {
+  const logout = useCallback(() => {
     localStorage.removeItem('token');
     setToken(null);
     setUser(null);
-    delete api.defaults.headers.common['Authorization'];
+    setupAxiosInterceptors(null);
+  }, [setupAxiosInterceptors]);
+
+  const value = {
+    token,
+    user,
+    login,
+    logout,
+    isAuthenticated: !!token,
   };
 
   return (
-    <AuthContext.Provider value={{ token, user, login, logout, isAuthenticated: !!token }}>
+    <AuthContext.Provider value={value}>
       {!loading && children}
     </AuthContext.Provider>
   );
