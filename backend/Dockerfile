@@ -14,7 +14,7 @@ RUN npm install
 COPY . .
 
 # Uygulamanın çalışacağı portu belirt
-EXPOSE 5000
+EXPOSE 5001
 
 # Uygulamayı başlat
 CMD ["npm", "start"]

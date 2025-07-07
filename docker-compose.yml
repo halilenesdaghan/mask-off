@@ -6,7 +6,7 @@ services:
     build: ./backend # backend klasöründeki Dockerfile'ı kullanır
     container_name: tobb_backend
     ports:
-      - "5000:5000" # Dışarıya 5000 portunu açıyoruz
+      - "5001:5001" # Dışarıya 5001 portunu açıyoruz
     volumes:
       - ./backend:/usr/src/app
       - /usr/src/app/node_modules
