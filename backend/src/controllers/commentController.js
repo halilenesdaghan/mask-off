@@ -6,34 +6,34 @@ import Post from '../models/postModel.js';
 // @route   POST /api/posts/:id/comments
 // @access  Private
 const createComment = asyncHandler(async (req, res) => {
-    const { content } = req.body;
-    const postId = req.params.id;
+  const { content } = req.body;
+  const { id: postId } = req.params;
 
-    const post = await Post.findById(postId);
-    if (!post) {
-        res.status(404);
-        throw new Error('Gönderi bulunamadı.');
-    }
-    
-    const comment = await Comment.create({
-        postId,
-        content,
-        // author: req.user._id // Gerekirse
-    });
-    
-    // Gönderinin yorum sayısını güncelle
-    post.commentCount = await Comment.countDocuments({ postId });
-    await post.save();
+  const post = await Post.findById(postId);
+  if (!post) {
+    res.status(404);
+    throw new Error('Gönderi bulunamadı.');
+  }
 
-    res.status(201).json(comment);
+  const comment = await Comment.create({
+    postId,
+    content,
+    // author: req.user.id
+  });
+
+  // İlgili post'un yorum sayısını artır
+  post.commentCount += 1;
+  await post.save();
+
+  res.status(201).json(comment);
 });
 
-// @desc    Get comments for a post
+// @desc    Get comments for a specific post
 // @route   GET /api/posts/:id/comments
 // @access  Public
-const getComments = asyncHandler(async (req, res) => {
-    const comments = await Comment.find({ postId: req.params.id }).sort({ createdAt: -1 });
-    res.status(200).json(comments);
+const getCommentsForPost = asyncHandler(async (req, res) => {
+  const comments = await Comment.find({ postId: req.params.id }).sort({ createdAt: -1 });
+  res.status(200).json(comments);
 });
 
-export { createComment, getComments };
+export { createComment, getCommentsForPost };

@@ -1,8 +1,9 @@
 {
-  "name": "mask-off",
+  "name": "mask-off-backend",
   "version": "1.0.0",
-  "description": "Anonymous sharing platform for TOBB ETU students.",
+  "description": "Backend for TOBB ETU anonymous sharing platform.",
   "main": "src/app.js",
+  "type": "module",
   "scripts": {
     "start": "node src/app.js",
     "dev": "nodemon src/app.js"

@@ -7,9 +7,9 @@ const notFound = (req, res, next) => {
 const errorHandler = (err, req, res, next) => {
   let statusCode = res.statusCode === 200 ? 500 : res.statusCode;
   let message = err.message;
-  
-  // Mongoose CastError (hatalı ObjectId)
-  if(err.name === 'CastError' && err.kind === 'ObjectId') {
+
+  // Mongoose CastError (hatalı ObjectId) hatasını yakala
+  if (err.name === 'CastError' && err.kind === 'ObjectId') {
     statusCode = 404;
     message = 'Kaynak bulunamadı.';
   }

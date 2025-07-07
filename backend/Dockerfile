@@ -1,13 +1,20 @@
-# Stage 1: Build
-FROM node:18-alpine AS builder
+# Stage 1: Kurulum için Node imajını kullan
+FROM node:18-alpine
+
+# Uygulama için çalışma dizini oluştur
 WORKDIR /usr/src/app
+
+# package.json ve package-lock.json dosyalarını kopyala
 COPY package*.json ./
+
+# Bağımlılıkları yükle
 RUN npm install
+
+# Proje dosyalarını kopyala
 COPY . .
 
-# Stage 2: Production
-FROM node:18-alpine
-WORKDIR /usr/src/app
-COPY --from=builder /usr/src/app .
+# Uygulamanın çalışacağı portu belirt
 EXPOSE 5000
+
+# Uygulamayı başlat
 CMD ["npm", "start"]

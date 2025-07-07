@@ -1,10 +1,9 @@
 import asyncHandler from 'express-async-handler';
 import jwt from 'jsonwebtoken';
 import User from '../models/userModel.js';
-import generateToken from '../utils/generateToken.js';
 import { sendLoginEmail } from '../services/emailService.js';
 
-// @desc    Register a new user (or find existing one) and send login link
+// @desc    Login or register a user and send login link
 // @route   POST /api/auth/login
 // @access  Public
 const loginOrRegister = asyncHandler(async (req, res) => {
@@ -15,31 +14,23 @@ const loginOrRegister = asyncHandler(async (req, res) => {
     throw new Error('Lütfen geçerli bir @etu.edu.tr e-posta adresi girin.');
   }
 
-  let user = await User.findOne({ email });
+  // Kullanıcıyı bul veya oluştur
+  let user = await User.findOneAndUpdate({ email }, {}, { upsert: true, new: true, setDefaultsOnInsert: true });
 
-  if (!user) {
-    user = await User.create({ email });
-  }
-
-  // Create a short-lived token for the login link
+  // Kısa ömürlü giriş token'ı oluştur
   const loginToken = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
-    expiresIn: process.env.JWT_LOGIN_EXPIRES_IN || '15m',
+    expiresIn: process.env.JWT_LOGIN_EXPIRES_IN,
   });
 
-  // This URL will be sent to the user's email
-  const loginUrl = `${req.protocol}://${req.get('host')}/api/auth/verify/${loginToken}`;
+  // Frontend'e yönlendirilecek URL
+  const loginUrl = `${process.env.FRONTEND_URL}/auth/verify/${loginToken}`;
 
-  // Send the email (placeholder for now)
-  try {
-    await sendLoginEmail(user.email, loginUrl);
-    res.status(200).json({
-      message: `Giriş linki ${user.email} adresine gönderildi. Lütfen e-postanızı kontrol edin.`,
-    });
-  } catch (error) {
-    console.error('Email sending error:', error);
-    res.status(500);
-    throw new Error('E-posta gönderilirken bir hata oluştu.');
-  }
+  // E-postayı gönder (simülasyon)
+  await sendLoginEmail(user.email, loginUrl);
+
+  res.status(200).json({
+    message: `Giriş linki ${user.email} adresine gönderildi. Lütfen e-postanızı kontrol edin.`,
+  });
 });
 
 // @desc    Verify login token and issue a session token
@@ -49,38 +40,34 @@ const verifyLoginToken = asyncHandler(async (req, res) => {
   const { token } = req.params;
 
   if (!token) {
-    res.status(400);
-    throw new Error('Geçersiz doğrulama linki.');
+    res.status(400).send('Doğrulama token\'ı bulunamadı.');
   }
 
-  try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    const user = await User.findById(decoded.id);
+  // Gelen login token'ını doğrula
+  const decoded = jwt.verify(token, process.env.JWT_SECRET);
+  const user = await User.findById(decoded.id);
 
-    if (!user) {
-      res.status(404);
-      throw new Error('Kullanıcı bulunamadı.');
-    }
-
-    // Mark user as verified if they weren't already
-    user.isVerified = true;
-    await user.save();
-
-    // Issue a longer-lived session token
-    const sessionToken = generateToken(user._id);
-
-    res.status(200).json({
-      message: 'Giriş başarılı!',
-      token: sessionToken,
-      user: {
-        id: user._id,
-        email: user.email,
-      },
-    });
-  } catch (error) {
+  if (!user) {
     res.status(401);
-    throw new Error('Geçersiz veya süresi dolmuş link. Lütfen tekrar giriş yapmayı deneyin.');
+    throw new Error('Kullanıcı bulunamadı.');
   }
+
+  // Kullanıcının doğrulama durumunu güncelle
+  user.isVerified = true;
+  await user.save();
+
+  // Uzun ömürlü oturum token'ı oluştur
+  const sessionToken = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
+    expiresIn: process.env.JWT_SESSION_EXPIRES_IN,
+  });
+
+  res.status(200).json({
+    token: sessionToken,
+    user: {
+      id: user._id,
+      email: user.email,
+    },
+  });
 });
 
 export { loginOrRegister, verifyLoginToken };

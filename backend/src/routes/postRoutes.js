@@ -1,18 +1,26 @@
 import express from 'express';
 import multer from 'multer';
-import { createPost, getPosts, getPostById } from '../controllers/postController.js';
+import { createPost, getPosts, getPostById, likePost } from '../controllers/postController.js';
 import { protect } from '../middleware/authMiddleware.js';
+import { getCommentsForPost, createComment } from '../controllers/commentController.js';
 
 const router = express.Router();
+const upload = multer({ storage: multer.memoryStorage() });
 
-// Multer'ı bellek depolamasıyla yapılandır (doğrudan S3'e akıtmak için)
-const storage = multer.memoryStorage();
-const upload = multer({ storage });
-
+// Gönderi Rotaları
 router.route('/')
-  .post(protect, upload.single('media'), createPost)
-  .get(getPosts);
+  .get(getPosts)
+  .post(protect, upload.single('media'), createPost);
+
+router.route('/:id')
+  .get(getPostById);
   
-router.route('/:id').get(getPostById);
+router.route('/:id/like')
+  .post(likePost); // Şimdilik korumasız, istenirse protect eklenebilir
+
+// Yorum Rotaları (Gönderi ile ilişkili olduğu için burada)
+router.route('/:id/comments')
+    .get(getCommentsForPost)
+    .post(protect, createComment);
 
 export default router;

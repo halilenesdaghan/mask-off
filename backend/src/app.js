@@ -8,27 +8,32 @@ import { notFound, errorHandler } from './middleware/errorMiddleware.js';
 // Rota dosyaları
 import authRoutes from './routes/authRoutes.js';
 import postRoutes from './routes/postRoutes.js';
-// Yorum rotasını da ekleyeceğiz
 
+// .env dosyasını yükle
 dotenv.config();
+
+// Veritabanına bağlan
 connectDB();
 
 const app = express();
 
-// Middlewares
-app.use(express.json()); // Body parser
+// Güvenlik için helmet
+app.use(helmet());
+
+// Gelen isteklerin body'sini parse etmek için (JSON)
+app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(cors()); // CORS'u etkinleştir
-app.use(helmet()); // Güvenlik başlıkları
+
+// CORS'u etkinleştir
+app.use(cors());
 
 // Ana Rotalar
-app.get('/', (req, res) => {
+app.get('/api', (req, res) => {
   res.send('API çalışıyor...');
 });
 
 app.use('/api/auth', authRoutes);
 app.use('/api/posts', postRoutes);
-// app.use('/api/comments', commentRoutes); // Yorum rotalarını da ekle
 
 // Hata Middleware'leri
 app.use(notFound);
