@@ -1,0 +1,8 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Genel stil ayarları buraya eklenebilir */
+body {
+  @apply bg-gray-50;
+}
