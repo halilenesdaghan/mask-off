@@ -1,0 +1,38 @@
+version: '3.8'
+
+services:
+  # Backend Service (Node.js/Express)
+  backend:
+    build: ./backend # backend klasöründeki Dockerfile'ı kullanır
+    container_name: tobb_backend
+    ports:
+      - "5000:5000" # Dışarıya 5000 portunu açıyoruz
+    volumes:
+      - ./backend:/usr/src/app
+      - /usr/src/app/node_modules
+    env_file:
+      - ./backend/.env # .env dosyasını backend klasöründen okur
+    environment:
+      - MONGO_URI=mongodb://mongo:27017/tobb-etu-anonim
+    depends_on:
+      - mongo
+    command: npm run dev
+
+  # Frontend Service (React/Nginx)
+  frontend:
+    build: ./frontend # frontend klasöründeki Dockerfile'ı kullanır
+    container_name: tobb_frontend
+    ports:
+      - "3000:80" # Tarayıcıdan 3000 portu ile erişeceğiz
+
+  # MongoDB Service
+  mongo:
+    image: mongo:latest
+    container_name: tobb_mongo
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
+
+volumes:
+  mongo-data:
